@@ -1,0 +1,154 @@
+#!/data/data/com.termux/files/usr/bin/python3
+import subprocess
+import re
+import os
+import textwrap
+
+BASE_DIR = os.path.expanduser("~/llama.cpp")
+MODEL_PATH = os.path.join(BASE_DIR, "gemma-1b.gguf")
+LLAMA_BIN = os.path.join(BASE_DIR, "build/bin/llama-cli")
+
+# ---------- Gruvbox Dark palette ----------
+FG      = "\033[38;2;235;219;178m"  # #ebdbb2
+ORANGE  = "\033[38;2;254;128;25m"   # #fe8019
+YELLOW  = "\033[38;2;250;189;47m"   # #fabd2f
+GREEN   = "\033[38;2;184;187;38m"   # #b8bb26
+AQUA    = "\033[38;2;142;192;124m"  # #8ec07c
+GRAY    = "\033[38;2;146;131;116m"  # #928374
+RESET   = "\033[0m"
+BOLD    = "\033[1m"
+
+MASCOT = [
+    r"$$\                                                   $$$$$$$\   $$\ $$\ ",
+    r"$$ |                                                  $$  __$$\  $$ |\__|",
+    r"$$ |      $$$$$$\   $$$$$$\   $$$$$$\  $$$$$$$\       $$ /  \__|$$ |$$\ ",
+    r"$$ |     $$  __$$\  \____$$\ $$  __$$\ $$  __$$\      $$ |      $$ |$$ |",
+    r"$$ |     $$$$$$$$ | $$$$$$$ |$$ |  \__|$$ |  $$ |     $$ |      $$ |$$ |",
+    r"$$ |     $$   ____|$$  __$$ |$$ |      $$ |  $$ |     $$ |  $$\ $$ |$$ |",
+    r"$$$$$$$$\\$$$$$$$\ \$$$$$$$ |$$ |      $$ |  $$ |     \$$$$$$  |$$ |$$ |",
+    r"\________|\_______| \_______|\__|      \__|  \__|      \______/ \__|\__|"
+]
+
+def draw_header():
+    for line in MASCOT:
+        print(YELLOW + line + RESET) # Gruvbox yellow for the logo
+    print()
+    print(ORANGE + BOLD + "  LearnCli" + RESET + GRAY + " - type 'quit' to exit" + RESET)
+    print()
+
+
+def strip_markdown(text):
+    # Strip markdown bold, italics, headers, and code ticks
+    text = re.sub(r"\*{1,3}(.*?)\*{1,3}", r"\1", text)
+    text = re.sub(r"^#+\s*", "", text, flags=re.MULTILINE)
+    text = re.sub(r"`(.*?)`", r"\1", text)
+    # Convert markdown bullets to a clean dot
+    text = re.sub(r"^\s*[\*\-]\s+", "• ", text, flags=re.MULTILINE)
+    return text
+
+def box(text, color=YELLOW, width=62):
+    inner_width = width - 4
+    lines = []
+
+    # Process text line by line to preserve intended paragraphs
+    for block in text.splitlines():
+        block = block.strip()
+        if not block:
+            lines.append("")
+            continue
+        wrapped = textwrap.wrap(block, width=inner_width)
+        lines.extend(wrapped)
+
+    top = "╭" + "─" * (width - 2) + "╮"
+    bottom = "╰" + "─" * (width - 2) + "╯"
+    print(color + top + RESET)
+    for l in lines:
+        print(color + "│ " + RESET + FG + l.ljust(inner_width) + RESET + color + " │" + RESET)
+    print(color + bottom + RESET)
+
+def clean_topic_string(topic):
+    # Normalize casings like "WHAT IS PHOTON" -> "what is photon"
+    t = topic.strip().strip("?.!")
+    if t.isupper():
+        t = t.lower()
+    return t
+
+def ask_model(topic):
+    clean_topic = clean_topic_string(topic)
+
+    # Explicit plain-text directive to avoid markdown asterisks
+    prompt = (
+        f"Explain {clean_topic} simply for a student in 2-3 short sentences. "
+        f"Then give one short practice question. "
+        f"Plain text only. Do not use asterisks, markdown, or headers.\n"
+        f"###ANSWER###\n"
+    )
+
+    # UPDATED COMMAND LIST WITH --simple-io
+    cmd = [
+        LLAMA_BIN,
+        "-m", MODEL_PATH,
+        "-p", prompt,
+        "-n", "320",
+        "--temp", "0.6",
+        "--no-display-prompt",
+        "--log-disable",
+        "--simple-io"
+    ]
+
+    # UPDATED SUBPROCESS CALL WITH stdin=subprocess.DEVNULL
+    result = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        stdin=subprocess.DEVNULL
+    )
+
+    raw = result.stdout
+
+    # Isolate text strictly after the delimiter
+    if "###ANSWER###" in raw:
+        answer = raw.split("###ANSWER###")[-1]
+    else:
+        answer = raw
+
+    # Clean residual markers, prompt artifacts, or partial control characters
+    answer = re.sub(r"###\s*ANSWER\s*###", "", answer, flags=re.IGNORECASE)
+    answer = re.sub(r"\[\s*Prompt:.*?\]", "", answer, flags=re.DOTALL)
+    answer = re.sub(r">\s*Explain.*?\n", "", answer, flags=re.IGNORECASE)
+    answer = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", "", answer)
+
+    # Regex clean markdown leftovers
+    answer = strip_markdown(answer)
+    answer = re.sub(r"\n{3,}", "\n\n", answer).strip()
+    return answer
+
+
+def main():
+    os.system("clear")
+    draw_header()
+    while True:
+        try:
+            topic = input(GREEN + "❯ What topic? " + RESET)
+        except (KeyboardInterrupt, EOFError):
+            print("\n" + GRAY + "bye." + RESET)
+            break
+
+        if topic.strip().lower() in ("quit", "exit"):
+            print(GRAY + "bye." + RESET)
+            break
+        if not topic.strip():
+            continue
+
+        clean_topic = clean_topic_string(topic)
+        box(clean_topic, color=AQUA, width=62)
+        print(GRAY + "  thinking..." + RESET)
+
+        answer = ask_model(clean_topic)
+        print()
+        box(answer, color=YELLOW, width=62)
+        print()
+
+if __name__ == "__main__":
+    main()
+
