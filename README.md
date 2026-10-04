@@ -59,6 +59,7 @@ Model source: [bartowski/google_gemma-3-1b-it-GGUF](https://huggingface.co/barto
 Type a topic, get an explanation and a practice question. Type `quit` to exit.
 
 ##Demo
+
 ![LearnCLI demo](Screenshot_20261005-000631_Termux.png)
 
 ## Notes
