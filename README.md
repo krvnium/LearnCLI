@@ -62,7 +62,7 @@ Type a topic, get an explanation and a practice question. Type `quit` to exit.
 
 ![LearnCLI demo](Screenshots/Screenshot_20261005-003623_Termux.png)
 
-- Demo run of the tool showing the explanation of topic "Toppling"
+- Demo run of the tool showing the explanation of topic "Newton's Third Law"
 
 ## Notes
 
