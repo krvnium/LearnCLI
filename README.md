@@ -60,7 +60,7 @@ Type a topic, get an explanation and a practice question. Type `quit` to exit.
 
 ## Demo
 
-![LearnCLI demo](Screenshots/Screenshot_20261005-000631_Termux.png)
+![LearnCLI demo](Screenshots/Screenshot_20261005-003623_Termux.png)
 
 - Demo run of the tool showing the explanation of topic "Toppling"
 
