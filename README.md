@@ -62,6 +62,8 @@ Type a topic, get an explanation and a practice question. Type `quit` to exit.
 
 ![LearnCLI demo](Screenshots/Screenshot_20261005-000631_Termux.png)
 
+- Demo run of the tool showing the explanation of topic "Toppling"
+
 ## Notes
 
 - The model file (`gemma-1b.gguf`) is not included in this repo — download it separately from Hugging Face and place it in the `llama.cpp` folder.
